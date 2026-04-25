@@ -43,7 +43,7 @@ departmentRouter.get('/:did', async (req: Request, res: Response): Promise<void>
 departmentRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const {did, name, location} = req.body as Department;
-        if (!name) {
+        if (!did || !name) {
             res.status(400).json(failure('did 和 name 为必填字段', 400));
             return;
         }

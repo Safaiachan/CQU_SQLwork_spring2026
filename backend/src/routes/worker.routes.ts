@@ -52,7 +52,7 @@ workerRouter.get('/:wid', async (req: Request, res: Response): Promise<void> => 
 workerRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const body = req.body as Worker;
-        if (!body.name) {
+        if (!body.wid || !body.name) {
             res.status(400).json(failure('wid 和 name 为必填字段', 400));
             return;
         }

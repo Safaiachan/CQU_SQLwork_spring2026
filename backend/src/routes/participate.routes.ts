@@ -45,6 +45,10 @@ participateRouter.get('/:wid/:pid', async (req: Request, res: Response): Promise
 participateRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const body = req.body as Participate;
+        if (!body.wid || !body.pid) {
+            res.status(400).json(failure('wid 和 pid 为必填字段', 400));
+            return;
+        }
 
         await query(
             `INSERT INTO participate (wid, pid, role, work_hour)

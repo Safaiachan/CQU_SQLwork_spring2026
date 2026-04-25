@@ -43,7 +43,7 @@ projectRouter.get('/:pid', async (req: Request, res: Response): Promise<void> =>
 projectRouter.post('/', async (req: Request, res: Response): Promise<void> => {
     try {
         const body = req.body as Project;
-        if (!body.name || !body.status) {
+        if (!body.pid || !body.name || !body.status) {
             res.status(400).json(failure('pid、name、status 为必填字段', 400));
             return;
         }

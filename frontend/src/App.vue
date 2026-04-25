@@ -3,15 +3,22 @@ import {onMounted, reactive, ref} from 'vue';
 import request from './api/request';
 
 const loading = ref(false);
+const message = ref('');
 
 const departments = ref([]);
 const workers = ref([]);
 const projects = ref([]);
 const participations = ref([]);
 
+const departmentQueryDid = ref('');
+const departmentQueryResult = ref(null);
+
 const departmentCreate = reactive({did: '', name: '', location: ''});
 const departmentUpdate = reactive({did: '', name: '', location: ''});
 const departmentDeleteDid = ref('');
+
+const workerQueryWid = ref('');
+const workerQueryResult = ref(null);
 
 const workerCreate = reactive({
   wid: '',
@@ -35,9 +42,15 @@ const workerUpdate = reactive({
 });
 const workerDeleteWid = ref('');
 
+const projectQueryPid = ref('');
+const projectQueryResult = ref(null);
+
 const projectCreate = reactive({pid: '', name: '', status: '', did: ''});
 const projectUpdate = reactive({pid: '', name: '', status: '', did: ''});
 const projectDeletePid = ref('');
+
+const participationQuery = reactive({wid: '', pid: ''});
+const participationQueryResult = ref(null);
 
 const participationCreate = reactive({wid: '', pid: '', role: '', work_hour: ''});
 const participationUpdate = reactive({wid: '', pid: '', role: '', work_hour: ''});
@@ -86,6 +99,100 @@ const fetchProjects = async () => {
 const fetchParticipations = async () => {
   const result = await request.get('/participations');
   participations.value = result.data || [];
+};
+
+const refreshDepartments = async () => {
+  try {
+    await withLoading(async () => {
+      await fetchDepartments();
+      setMessage('部门批量查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const refreshWorkers = async () => {
+  try {
+    await withLoading(async () => {
+      await fetchWorkers();
+      setMessage('员工批量查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const refreshProjects = async () => {
+  try {
+    await withLoading(async () => {
+      await fetchProjects();
+      setMessage('项目批量查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const refreshParticipations = async () => {
+  try {
+    await withLoading(async () => {
+      await fetchParticipations();
+      setMessage('参与关系批量查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const queryDepartment = async () => {
+  try {
+    await withLoading(async () => {
+      const result = await request.get(`/departments/${Number(departmentQueryDid.value)}`);
+      departmentQueryResult.value = result.data;
+      setMessage('部门查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const queryWorker = async () => {
+  try {
+    await withLoading(async () => {
+      const result = await request.get(`/workers/${Number(workerQueryWid.value)}`);
+      workerQueryResult.value = result.data;
+      setMessage('员工查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const queryProject = async () => {
+  try {
+    await withLoading(async () => {
+      const result = await request.get(`/projects/${Number(projectQueryPid.value)}`);
+      projectQueryResult.value = result.data;
+      setMessage('项目查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const queryParticipation = async () => {
+  try {
+    await withLoading(async () => {
+      const result = await request.get(
+          `/participations/${Number(participationQuery.wid)}/${Number(participationQuery.pid)}`
+      );
+      participationQueryResult.value = result.data;
+      setMessage('参与关系查询成功');
+    });
+  } catch (error) {
+    handleError(error);
+  }
 };
 
 const refreshAll = async () => {
@@ -298,32 +405,58 @@ onMounted(async () => {
       <h1>企业管理系统（单页面）</h1>
       <button :disabled="loading" @click="refreshAll">刷新全部</button>
     </header>
+    <p class="msg">{{ message }}</p>
     <section class="block">
       <h2>部门 Departments</h2>
       <p class="hint">新增表单中 <strong>*</strong> 为必填字段</p>
-      <div class="form-row">
+      <div class="op-row">
+        <span class="op-label">按 id 查</span>
+        <input v-model="departmentQueryDid" placeholder="did" type="number"/>
+        <button :disabled="loading" @click="queryDepartment">查询</button>
+      </div>
+      <pre v-if="departmentQueryResult">{{ departmentQueryResult }}</pre>
+      <div class="op-row">
+        <span class="op-label">批量查</span>
+        <button :disabled="loading" @click="refreshDepartments">查询全部</button>
+      </div>
+      <pre>{{ departments }}</pre>
+      <div class="op-row">
+        <span class="op-label">新增</span>
         <input v-model="departmentCreate.did" placeholder="did *" type="number" required/>
         <input v-model="departmentCreate.name" placeholder="name *" required/>
         <input v-model="departmentCreate.location" placeholder="location"/>
         <button :disabled="loading" @click="createDepartment">新增</button>
       </div>
-      <div class="form-row">
-        <input v-model="departmentUpdate.did" placeholder="did(用于更新)" type="number"/>
-        <input v-model="departmentUpdate.name" placeholder="name(可选)"/>
-        <input v-model="departmentUpdate.location" placeholder="location(可选)"/>
+      <div class="op-row">
+        <span class="op-label">更新</span>
+        <input v-model="departmentUpdate.did" placeholder="did" type="number"/>
+        <input v-model="departmentUpdate.name" placeholder="name"/>
+        <input v-model="departmentUpdate.location" placeholder="location"/>
         <button :disabled="loading" @click="updateDepartment">更新</button>
       </div>
-      <div class="form-row">
-        <input v-model="departmentDeleteDid" placeholder="did(用于删除)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">删除</span>
+        <input v-model="departmentDeleteDid" placeholder="did" type="number"/>
         <button :disabled="loading" @click="deleteDepartment">删除</button>
       </div>
-      <pre>{{ departments }}</pre>
     </section>
 
     <section class="block">
       <h2>员工 Workers</h2>
       <p class="hint">新增表单中 <strong>*</strong> 为必填字段</p>
-      <div class="form-grid">
+      <div class="op-row">
+        <span class="op-label">按 id 查</span>
+        <input v-model="workerQueryWid" placeholder="wid" type="number"/>
+        <button :disabled="loading" @click="queryWorker">查询</button>
+      </div>
+      <pre v-if="workerQueryResult">{{ workerQueryResult }}</pre>
+      <div class="op-row">
+        <span class="op-label">批量查</span>
+        <button :disabled="loading" @click="refreshWorkers">查询全部</button>
+      </div>
+      <pre>{{ workers }}</pre>
+      <div class="op-row">
+        <span class="op-label">新增</span>
         <input v-model="workerCreate.wid" placeholder="wid *" type="number" required/>
         <input v-model="workerCreate.name" placeholder="name *" required/>
         <input v-model="workerCreate.age" placeholder="age" type="number"/>
@@ -334,71 +467,99 @@ onMounted(async () => {
         <input v-model="workerCreate.did" placeholder="did" type="number"/>
         <button :disabled="loading" @click="createWorker">新增</button>
       </div>
-      <div class="form-grid">
-        <input v-model="workerUpdate.wid" placeholder="wid(用于更新)" type="number"/>
-        <input v-model="workerUpdate.name" placeholder="name(可选)"/>
-        <input v-model="workerUpdate.age" placeholder="age(可选)" type="number"/>
-        <input v-model="workerUpdate.gender" placeholder="gender(可选)"/>
-        <input v-model="workerUpdate.address" placeholder="address(可选)"/>
-        <input v-model="workerUpdate.email" placeholder="email(可选)"/>
-        <input v-model="workerUpdate.salary" placeholder="salary(可选)" type="number"/>
-        <input v-model="workerUpdate.did" placeholder="did(可选)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">更新</span>
+        <input v-model="workerUpdate.wid" placeholder="wid" type="number"/>
+        <input v-model="workerUpdate.name" placeholder="name"/>
+        <input v-model="workerUpdate.age" placeholder="age" type="number"/>
+        <input v-model="workerUpdate.gender" placeholder="gender"/>
+        <input v-model="workerUpdate.address" placeholder="address"/>
+        <input v-model="workerUpdate.email" placeholder="email"/>
+        <input v-model="workerUpdate.salary" placeholder="salary" type="number"/>
+        <input v-model="workerUpdate.did" placeholder="did" type="number"/>
         <button :disabled="loading" @click="updateWorker">更新</button>
       </div>
-      <div class="form-row">
-        <input v-model="workerDeleteWid" placeholder="wid(用于删除)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">删除</span>
+        <input v-model="workerDeleteWid" placeholder="wid" type="number"/>
         <button :disabled="loading" @click="deleteWorker">删除</button>
       </div>
-      <pre>{{ workers }}</pre>
     </section>
 
     <section class="block">
       <h2>项目 Projects</h2>
       <p class="hint">新增表单中 <strong>*</strong> 为必填字段</p>
-      <div class="form-row">
+      <div class="op-row">
+        <span class="op-label">按 id 查</span>
+        <input v-model="projectQueryPid" placeholder="pid" type="number"/>
+        <button :disabled="loading" @click="queryProject">查询</button>
+      </div>
+      <pre v-if="projectQueryResult">{{ projectQueryResult }}</pre>
+      <div class="op-row">
+        <span class="op-label">批量查</span>
+        <button :disabled="loading" @click="refreshProjects">查询全部</button>
+      </div>
+      <pre>{{ projects }}</pre>
+      <div class="op-row">
+        <span class="op-label">新增</span>
         <input v-model="projectCreate.pid" placeholder="pid *" type="number" required/>
         <input v-model="projectCreate.name" placeholder="name *" required/>
         <input v-model="projectCreate.status" placeholder="status *" required/>
         <input v-model="projectCreate.did" placeholder="did" type="number"/>
         <button :disabled="loading" @click="createProject">新增</button>
       </div>
-      <div class="form-row">
-        <input v-model="projectUpdate.pid" placeholder="pid(用于更新)" type="number"/>
-        <input v-model="projectUpdate.name" placeholder="name(可选)"/>
-        <input v-model="projectUpdate.status" placeholder="status(可选)"/>
-        <input v-model="projectUpdate.did" placeholder="did(可选)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">更新</span>
+        <input v-model="projectUpdate.pid" placeholder="pid" type="number"/>
+        <input v-model="projectUpdate.name" placeholder="name"/>
+        <input v-model="projectUpdate.status" placeholder="status"/>
+        <input v-model="projectUpdate.did" placeholder="did" type="number"/>
         <button :disabled="loading" @click="updateProject">更新</button>
       </div>
-      <div class="form-row">
-        <input v-model="projectDeletePid" placeholder="pid(用于删除)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">删除</span>
+        <input v-model="projectDeletePid" placeholder="pid" type="number"/>
         <button :disabled="loading" @click="deleteProject">删除</button>
       </div>
-      <pre>{{ projects }}</pre>
     </section>
 
     <section class="block">
       <h2>参与关系 Participations</h2>
       <p class="hint">新增表单中 <strong>*</strong> 为必填字段</p>
-      <div class="form-row">
+      <div class="op-row">
+        <span class="op-label">按 id 查</span>
+        <input v-model="participationQuery.wid" placeholder="wid" type="number"/>
+        <input v-model="participationQuery.pid" placeholder="pid" type="number"/>
+        <button :disabled="loading" @click="queryParticipation">查询</button>
+      </div>
+      <pre v-if="participationQueryResult">{{ participationQueryResult }}</pre>
+      <div class="op-row">
+        <span class="op-label">批量查</span>
+        <button :disabled="loading" @click="refreshParticipations">查询全部</button>
+      </div>
+      <pre>{{ participations }}</pre>
+      <div class="op-row">
+        <span class="op-label">新增</span>
         <input v-model="participationCreate.wid" placeholder="wid *" type="number" required/>
         <input v-model="participationCreate.pid" placeholder="pid *" type="number" required/>
         <input v-model="participationCreate.role" placeholder="role"/>
         <input v-model="participationCreate.work_hour" placeholder="work_hour" type="number"/>
         <button :disabled="loading" @click="createParticipation">新增</button>
       </div>
-      <div class="form-row">
-        <input v-model="participationUpdate.wid" placeholder="wid(用于更新)" type="number"/>
-        <input v-model="participationUpdate.pid" placeholder="pid(用于更新)" type="number"/>
-        <input v-model="participationUpdate.role" placeholder="role(可选)"/>
-        <input v-model="participationUpdate.work_hour" placeholder="work_hour(可选)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">更新</span>
+        <input v-model="participationUpdate.wid" placeholder="wid" type="number"/>
+        <input v-model="participationUpdate.pid" placeholder="pid" type="number"/>
+        <input v-model="participationUpdate.role" placeholder="role"/>
+        <input v-model="participationUpdate.work_hour" placeholder="work_hour" type="number"/>
         <button :disabled="loading" @click="updateParticipation">更新</button>
       </div>
-      <div class="form-row">
-        <input v-model="participationDelete.wid" placeholder="wid(用于删除)" type="number"/>
-        <input v-model="participationDelete.pid" placeholder="pid(用于删除)" type="number"/>
+      <div class="op-row">
+        <span class="op-label">删除</span>
+        <input v-model="participationDelete.wid" placeholder="wid" type="number"/>
+        <input v-model="participationDelete.pid" placeholder="pid" type="number"/>
         <button :disabled="loading" @click="deleteParticipation">删除</button>
       </div>
-      <pre>{{ participations }}</pre>
     </section>
   </div>
 </template>
@@ -437,12 +598,18 @@ onMounted(async () => {
   font-size: 13px;
 }
 
-.form-row,
-.form-grid {
+.op-row {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 10px;
+}
+
+.op-label {
+  min-width: 72px;
+  color: #333;
+  font-weight: 600;
 }
 
 input {
